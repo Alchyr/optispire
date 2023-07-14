@@ -1,4 +1,4 @@
-package optispire.localization;
+/*package optispire.localization;
 
 import com.evacipated.cardcrawl.modthespire.lib.*;
 import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
@@ -22,15 +22,6 @@ public class UseEfficientMap {
     public static SpireReturn<ObjectConstructor<?>> SwapType()
     {
         return SpireReturn.Return(UseEfficientMap::makeMap);
-        /*return new ExprEditor() {
-            @Override
-            public void edit(NewExpr e) throws CannotCompileException {
-                if (e.getClassName().equals(LinkedTreeMap.class.getName()) ||
-                    e.getClassName().equals(LinkedHashMap.class.getName())) {
-                    e.replace("$_ = com.koloboke.collect.map.hash.HashObjObjMaps.newMutableMap();");
-                }
-            }
-        };*/
     }
 
     private static synchronized Map<?, ?> makeMap() {
@@ -45,3 +36,4 @@ public class UseEfficientMap {
         }
     }
 }
+*/
