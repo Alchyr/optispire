@@ -4,7 +4,7 @@
     <groupId>ramsaver</groupId>
     <artifactId>ramsaver</artifactId>
     <name>Ram Saver</name>
-    <version>0.0.0</version>
+    <version>0.2.0</version>
     <description>Reduces how much RAM Slay the Spire uses. Primarily aimed at managing when images are loaded. Can and will worsen performance in exchange for saving RAM.</description>
 
     <properties>

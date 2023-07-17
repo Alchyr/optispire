@@ -1,4 +1,4 @@
-package optispire.patches;
+/*package optispire.patches;
 
 import org.clapper.util.classutil.ClassFilter;
 import org.clapper.util.classutil.ClassFinder;
@@ -46,3 +46,4 @@ public class GamePackageFilter implements ClassFilter {
         return true;
     }
 }
+*/

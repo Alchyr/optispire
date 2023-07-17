@@ -67,6 +67,9 @@ Gson ends up using LinkedTreeMap for all the localization text
 
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.RealTexture;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.utils.ObjectSet;
@@ -106,21 +109,6 @@ public class RamSaver {
             Process 1 "set" of assets.
             Any assets that can age (disposed of if not requested) will age.
             Any old/dead assets will be cleaned up.
-     */
-
-    /*
-        Atlases:
-
-        The original texture atlas initialization is replaced
-        Custom class that extends TextureAtlas.
-        The atlas itself is not tracked in Optispire.
-        The methods of ManagedAtlas just refer back to Optispire.
-        It also returns a ManagedRegion, which refers back to Optispire in the same way.
-        If the texture used by a ManagedRegion has been disposed, it will reload it.
-
-            - When a region is requested, load page for that region (if not loaded) and add to managed assets
-            - When a page is disposed, clean up all those regions (as expected)
-            - The atlas and regions themselves are never put in the ManagedAsset list, remaining a permanent object containing primarily information.
      */
 
 
@@ -172,30 +160,47 @@ public class RamSaver {
         loadedSets.add(new ArrayList<>());
     }
 
-    private static final Map<String, Supplier<Texture>> textures = new HashMap<>(256);
-    /*private static final Map<String, ManagedAtlas> atlases = new HashMap<>(64);
-    private static final Map<String, Supplier<TextureAtlas.AtlasRegion>> regions = new HashMap<>(64);*/
+    private static final Map<String, FileTextureSupplier> textures = new HashMap<>(256);
+    public static class FileTextureSupplier implements Supplier<Texture> {
+        final FileHandle file;
+        final Pixmap.Format format;
+        final boolean useMipMaps;
 
-    //Code attempts to access variables will pass use the ID, which will be used to find/load the necessary object
-    /*public static void registerAtlas(String atlasID, FileHandle atlasFile) {
-        ManagedAtlas atlas = new ManagedAtlas(atlasFile);
-        atlases.put(atlasID, atlas);
+        protected Texture.TextureFilter minFilter = Texture.TextureFilter.Nearest;
+        protected Texture.TextureFilter magFilter = Texture.TextureFilter.Nearest;
+        protected Texture.TextureWrap uWrap = Texture.TextureWrap.ClampToEdge;
+        protected Texture.TextureWrap vWrap = Texture.TextureWrap.ClampToEdge;
+
+        public FileTextureSupplier(FileHandle file, Pixmap.Format format, boolean useMipMaps) {
+            this.file = file;
+            this.format = format;
+            this.useMipMaps = useMipMaps;
+        }
+
+        @Override
+        public Texture get() {
+            RealTexture real = new RealTexture(file, format, useMipMaps);
+            real.setFilter(this.minFilter, this.magFilter);
+            real.setWrap(this.uWrap, this.vWrap);
+            return real;
+        }
+
+        public void setFilter(Texture.TextureFilter minFilter, Texture.TextureFilter magFilter) {
+            this.minFilter = minFilter;
+            this.magFilter = magFilter;
+        }
+
+        public void setWrap(Texture.TextureWrap u, Texture.TextureWrap v) {
+            this.uWrap = u;
+            this.vWrap = v;
+        }
     }
 
-    public static void registerRegion(String regionID, Supplier<TextureAtlas.AtlasRegion> regionSupplier) {
-        regions.put(regionID, regionSupplier);
-    }*/
 
-    /*public static void registerTextureForRegion(String textureID, String texturePath) {
-        registerTexture(textureID + "RGN", ()->Optispire.makeTexture(texturePath));
-    }*/
     public static boolean textureExists(String ID) {
         return textures.containsKey(ID);
     }
-    public static void registerTexture(String textureID, String texturePath) {
-        registerTexture(textureID, ()-> RamSaver.makeTexture(texturePath));
-    }
-    public static void registerTexture(String textureID, Supplier<Texture> texSupplier) {
+    public static void registerTexture(String textureID, FileTextureSupplier texSupplier) {
         textures.put(textureID, texSupplier);
     }
 
@@ -279,33 +284,6 @@ public class RamSaver {
         return t;
     }
 
-    /*public static TextureAtlas.AtlasRegion loadRegion(String id, boolean canAge) {
-        Supplier<TextureAtlas.AtlasRegion> regionSupplier = regions.get(id);
-        if (regionSupplier == null) {
-            System.out.println("Attempted to load unknown region " + id);
-            return null;
-        }
-
-        ManagedAsset atlasHolder = getAssetHolder(regionInfo.getKey());
-        ManagedAtlas atlas;
-        if (atlasHolder == null || atlasHolder.item() == null) {
-            atlas = loadAtlas(regionInfo.getKey(), canAge);
-            if (atlas == null) {
-                return null;
-            }
-            atlasHolder = loadedAssets.get(regionInfo.getKey());
-        }
-        else
-            atlas = atlasHolder.item();
-
-        TextureAtlas.AtlasRegion region = atlas.findRegion(regionInfo.getValue());
-        if (region == null) {
-            System.out.println("Region " + regionInfo.getValue() + " not found in atlas " + regionInfo.getKey());
-            return null;
-        }
-
-        return loadRegion(id, region, atlasHolder, canAge);
-    }*/
     public static TextureAtlas.AtlasRegion loadRegion(String id, TextureAtlas.AtlasRegion region, ManagedAsset parent, boolean canAge) {
         ManagedAsset holder = managedAssetPool.obtain();
         holder.setAsset(id, region, ManagedAsset.AssetType.REGION);
@@ -338,42 +316,9 @@ public class RamSaver {
         return region;
     }
 
-    /*public static ManagedAtlas loadAtlas(String id, boolean canAge) {
-        ManagedAtlas atlas = atlases.get(id);
-        if (atlas == null) {
-            System.out.println("Attempted to load unknown atlas " + id);
-            return null;
-        }
-
-        ManagedAsset holder = managedAssetPool.obtain();
-        holder.setAsset(id, atlas, ManagedAsset.AssetType.ATLAS);
-        holder.canAge = canAge;
-
-        ManagedAsset old = loadedAssets.put(id, holder);
-        //For this to be called, old item is null due to GC
-        //If not null, already exists in a set.
-        if (old == null) {
-            //Store in a set, then return
-            for (ArrayList<String> set : loadedSets) {
-                if (set.size() < SET_LIMIT) {
-                    set.add(id);
-                    holder.set = set;
-                    return atlas;
-                }
-            }
-            ArrayList<String> newSet = new ArrayList<>(SET_LIMIT);
-            newSet.add(id);
-            holder.set = newSet;
-            loadedSets.add(newSet);
-        }
-        else {
-            //Properly dispose of it.
-            holder.set = old.set;
-            dispose(old, false);
-        }
-        return atlas;
-    }*/
-
+    public static FileTextureSupplier getTextureSupplier(String id) {
+        return textures.get(id);
+    }
     public static Texture getExistingTexture(String id) {
         Texture t = getAsset(id);
         return t != null && t.getTextureObjectHandle() != 0 ? t : null;
@@ -418,34 +363,6 @@ public class RamSaver {
 
         return loadRegion(regionID, region, texture, false); //the region itself doesn't need to age
     }
-
-    /*public static TextureAtlas.AtlasRegion getRegion(TextureAtlas.AtlasRegion original, String id) {
-        return getRegion(original, id, false);
-    }
-    public static TextureAtlas.AtlasRegion getRegion(TextureAtlas.AtlasRegion original, String id, boolean canAge) {
-        if (original != null)
-            return original;
-
-        original = getAsset(id);
-        if (original != null)
-            return original;
-
-        return loadRegion(id, canAge);
-    }
-
-    public static TextureAtlas getAtlas(TextureAtlas original, String id) {
-        return getAtlas(original, id, false);
-    }
-    public static TextureAtlas getAtlas(TextureAtlas original, String id, boolean canAge) {
-        if (original != null)
-            return original;
-
-        original = getAsset(id);
-        if (original != null)
-            return original;
-
-        return loadAtlas(id, canAge);
-    }*/
 
     public static void age(String id) {
         ManagedAsset asset = loadedAssets.get(id);

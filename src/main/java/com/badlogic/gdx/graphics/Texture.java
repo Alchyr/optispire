@@ -84,22 +84,15 @@ public class Texture extends GLTexture {
         }
 
         if (!RamSaver.textureExists(file.path())) {
-            RamSaver.registerTexture(file.path(), this::makeReal);
+            RamSaver.registerTexture(file.path(), new RamSaver.FileTextureSupplier(file, format, useMipMaps));
         }
-    }
-
-    private RealTexture makeReal() {
-        RealTexture real = new RealTexture(file, format, useMipMaps);
-        real.setFilter(this.minFilter, this.magFilter);
-        real.setWrap(this.uWrap, this.vWrap);
-        return real;
     }
 
     //Not Useless constructor, used by self
     private Texture(int glTarget, int glHandle, TextureData data) {
         super(glTarget, glHandle);
         this.isFake = false;
-        System.out.println("Tex (not file)");
+        //System.out.println("Tex (not file)");
         this.load(data);
         if (data.isManaged()) {
             addManagedTexture(Gdx.app, this);
@@ -276,7 +269,12 @@ public class Texture extends GLTexture {
         if (v != null)
             this.vWrap = v;
 
-        Texture t = RamSaver.getExistingTexture(file.path());
+        String key = file.path();
+        RamSaver.FileTextureSupplier supplier = RamSaver.getTextureSupplier(key);
+        if (supplier != null)
+            supplier.setWrap(u, v);
+
+        Texture t = RamSaver.getExistingTexture(key);
         if (t != null)
             t.unsafeSetWrap(u, v, force);
     }
@@ -291,7 +289,12 @@ public class Texture extends GLTexture {
         this.uWrap = u;
         this.vWrap = v;
 
-        Texture t = RamSaver.getExistingTexture(file.path());
+        String key = file.path();
+        RamSaver.FileTextureSupplier supplier = RamSaver.getTextureSupplier(key);
+        if (supplier != null)
+            supplier.setWrap(u, v);
+
+        Texture t = RamSaver.getExistingTexture(key);
         if (t != null)
             t.setWrap(u, v);
     }
@@ -308,7 +311,12 @@ public class Texture extends GLTexture {
         if (magFilter != null)
             this.magFilter = magFilter;
 
-        Texture t = RamSaver.getExistingTexture(file.path());
+        String key = file.path();
+        RamSaver.FileTextureSupplier supplier = RamSaver.getTextureSupplier(key);
+        if (supplier != null)
+            supplier.setFilter(minFilter, magFilter);
+
+        Texture t = RamSaver.getExistingTexture(key);
         if (t != null)
             t.unsafeSetFilter(minFilter, magFilter, force);
     }
@@ -323,7 +331,12 @@ public class Texture extends GLTexture {
         this.minFilter = minFilter;
         this.magFilter = magFilter;
 
-        Texture t = RamSaver.getExistingTexture(file.path());
+        String key = file.path();
+        RamSaver.FileTextureSupplier supplier = RamSaver.getTextureSupplier(key);
+        if (supplier != null)
+            supplier.setFilter(minFilter, magFilter);
+
+        Texture t = RamSaver.getExistingTexture(key);
         if (t != null)
             t.setFilter(minFilter, magFilter);
     }
@@ -645,12 +658,4 @@ public class Texture extends GLTexture {
         t.height = height;
         t.knowSize = true;
     }
-
-
-    //ktx
-
-
-
-
-
 }
