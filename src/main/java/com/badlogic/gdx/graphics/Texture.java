@@ -26,6 +26,7 @@ public class Texture extends GLTexture {
         imageExtensions.add("zktx");
         imageExtensions.add("bmp"); //do these even work in libgdx
         imageExtensions.add("gif");
+        imageExtensions.add("sff"); //wtf vupshion
     }
 
     TextureData data;

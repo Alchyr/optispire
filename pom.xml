@@ -4,8 +4,8 @@
     <groupId>ramsaver</groupId>
     <artifactId>ramsaver</artifactId>
     <name>Ram Saver</name>
-    <version>0.2.0</version>
-    <description>Reduces how much RAM Slay the Spire uses. Primarily aimed at managing when images are loaded. Can and will worsen performance in exchange for saving RAM.</description>
+    <version>0.2.2</version>
+    <description>Reduces how much RAM Slay the Spire uses. Primarily aimed at managing when images are loaded. Results in more frequent texture loading.</description>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -52,6 +52,13 @@
             <version>0.0.0</version>
             <scope>system</scope>
             <systemPath>${Steam.path}/workshop/content/646570/1610056683/downfall.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>vupshion</groupId>
+            <artifactId>vupshion</artifactId>
+            <version>0.0.0</version>
+            <scope>system</scope>
+            <systemPath>${Steam.path}/workshop/content/646570/2568224579/VUPShionMod.jar</systemPath>
         </dependency>
     </dependencies>
 
